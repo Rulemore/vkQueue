@@ -8,8 +8,8 @@ import {
   HearManager
 } from '@vk-io/hear';
 
-const TOKEN = ''
-const whtieList = [305489985, 230362993] // Список разрешенных пользователей 
+const TOKEN = '';
+const whtieList = [305489985, 230362993, 291163827] // Список разрешенных пользователей 
 
 const vk = new VK({
   token: TOKEN
