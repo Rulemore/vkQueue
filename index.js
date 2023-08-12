@@ -8,8 +8,9 @@ import {
   HearManager
 } from '@vk-io/hear';
 
-const TOKEN = '';
-const whtieList = [305489985, 230362993, 291163827] // Список разрешенных пользователей 
+import fs from 'fs';
+
+const TOKEN = ''; // Токен группы
 
 const vk = new VK({
   token: TOKEN
@@ -32,6 +33,22 @@ vk.updates.on('message_new', bot.middleware);
 
 vk.updates.start().catch(console.error);
 
+async function fileToArray() { // Функция для получения массива из файла
+  const content = await fs.readFileSync('whitelist.txt', 'utf-8');
+  const lines = content.split('\n');
+  return lines.filter(line => line.trim() !== '');
+}
+
+async function removeValueFromFile(filename, valueToRemove) { // Функция для удаления значения из файла
+  const content = await fs.readFileSync(filename, 'utf-8');
+  const lines = content.split('\n');
+  const updatedLines = lines.filter(line => line !== valueToRemove);
+  fs.writeFileSync(filename, updatedLines.join('\n'), 'utf-8');
+}
+
+async function addValueToFile(filename, value) { // Функция для добавления значения в файл
+  await fs.appendFileSync(filename, value + '\n', 'utf-8');
+}
 
 async function getUserString(userId) { // Функция для получения имени пользователя
   const users = await api.call('users.get', { //достает имя через Id
@@ -43,9 +60,10 @@ async function getUserString(userId) { // Функция для получени
   return userString;
 };
 
-
 bot.hear(/^q start (.+)/, async (context) => { // Вызов начала очереди
-  if (!whtieList.includes(context.senderId)) {
+  const whitelist = await fileToArray();
+  const userId = context.senderId;
+  if (!whitelist.includes(userId.toString())) {
     await context.send('Пососи');
     return;
   }
@@ -59,8 +77,7 @@ bot.hear(/^q help$/, async (context) => { // Помощь
   await context.send('Создать очередь: q start "название очереди"\n Тык добавляет в очередь \n Повторный тык удаляет из очереди');
 });
 
-
-vk.updates.on('message_event', async (context) => {
+vk.updates.on('message_event', async (context) => { // Обработка нажатия кнопки
   const userId = context.userId;
   const messageId = context.conversationMessageId;
   const peerId = context.peerId;
@@ -89,4 +106,31 @@ vk.updates.on('message_event', async (context) => {
       keyboard: keyboard,
     });
   }
+});
+
+bot.hear(/^q add w (.+)/, async (context) => { // Добавление в белый список
+  const userId = context.$match[1];
+  const whitelist = await fileToArray();
+  if (whitelist.includes(userId.toString())) {
+    context.send('Пользователь уже в белом списке');
+    return;
+  }
+  await addValueToFile('whitelist.txt', userId);
+  context.send('Пользователь добавлен в белый список');
+});
+
+bot.hear(/^q del w (.+)/, async (context) => { // Удаление из белого списка
+  const userId = context.$match[1];
+  await removeValueFromFile('whitelist.txt', userId);
+  context.send('Пользователь удален из белого списка');
+});
+
+bot.hear(/^q list w$/, async (context) => { // Удаление из белого списка
+  const whitelist = await fileToArray();
+  let message = 'Список пользователей в белом списке:\n';
+  for (let i = 0; i < whitelist.length; i++) {
+    const userString = await getUserString(parseInt(whitelist[i]));
+    message += userString + '\n';
+  };
+  await context.send(message);
 });

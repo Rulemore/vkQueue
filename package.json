@@ -2,6 +2,7 @@
   "type": "module",
   "dependencies": {
     "@vk-io/hear": "^1.1.1",
+    "fs": "^0.0.1-security",
     "vk-io": "^4.8.3"
   }
 }
